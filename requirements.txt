@@ -1,3 +1,5 @@
 termcolor
 boto3
 ConfigParser
+argparse
+ruamel.yaml
