@@ -1,9 +1,11 @@
 import configparser
 import sys
 from os.path import expanduser
+import datetime
 
 import logger
 import api_calls
+import time_helper
 
 
 class Utility(object):
@@ -23,7 +25,7 @@ class Utility(object):
         else:
             self.logger.error("{} in line {}:\n{}".format(message, exc_tb.tb_lineno, error))
 
-    def session_exists(self, section, config_path):
+    def section_exists(self, section, config_path):
         if config_path.has_section(section):
             self.print_message('Section exists')
         else:
@@ -68,6 +70,9 @@ class Utility(object):
         with open(parser_path, 'w+') as parser_file:
             parser.write(parser_file)
     
+    def _get_section_options(self, parser, section):
+        return dict(parser[section])
+
     def create_config_parsers(self, paths):
         list_of_parsers = []
         if isinstance(paths, list):
@@ -86,7 +91,43 @@ class Utility(object):
             generic_parser.read([paths])
             list_of_parsers.append(generic_parser)
         return list_of_parsers if len(list_of_parsers) > 0 else list_of_parsers[0]
+
+
+    def discover_sections(self, parser):
+        sections = parser.sections()
+        sections_discovered=[]
+        for section in sections:
+            if parser.has_option(section, 'aws_expiration'):
+                helper = time_helper.TimeHelper()
+                expiration = parser.get(section, 'aws_expiration')
+
+                time = helper._expiration_to_datetime(expiration)
+
+                sections_discovered.append(section)
+                self.print_message('Section {} with expiration date {}'.format(section, time))
+        return sections_discovered
+
+    def valid_sections(self, parser, sections):
+        for section in sections:
+            profile, timedelta = self._is_section_valid(parser,section)
+            if timedelta:
+                self.print_message('You have {} left for your {} role'.format(timedelta, section))
                 
+    
+    def _is_section_valid(self, parser, section):
+        if parser.has_option(section, 'aws_expiration'):
+            helper = time_helper.TimeHelper()
+            expiration = parser.get(section, 'aws_expiration')
+
+            time = helper._expiration_to_datetime(expiration)
+            timedelta = helper._find_timedelta(time)
+            return timedelta if timedelta.total_seconds()>0 else False
+
+    def clean_sections(self, parser):
+        sections = parser.sections()
+        for section in sections:
+            if self._is_section_valid(parser, section)
+
 if '__main__' in __name__:
     print('RUNNING UTILS')
     u = Utility()
@@ -95,8 +136,10 @@ if '__main__' in __name__:
     aws_config_path=expanduser("~/.aws/config")
     aws_creds, aws_config = u.create_config_parsers([aws_creds_path, aws_config_path])
 
-    creds=u.get_credentials('test-user')
-    if u.session_exists('test-user-temp',aws_config):
+    creds = u.get_credentials('test-user')
+    sections = u.discover_sections(aws_creds)
+    u.valid_sections(aws_creds, sections)
+    if u.section_exists('test-user-temp',aws_config):
         parser = u._set_section_options(aws_config, 'test-user-temp', {'region': 'eu-west-1'})
         u._write_option_to_config(parser, aws_config_path)
     else:
