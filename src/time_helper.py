@@ -9,22 +9,21 @@ class TimeHelper(object):
         self.tz = tz
         self.aws_credentials_path = os.path.expanduser(aws_credentials_path)
 
+    def _string_to_datetime(self, string):
+        return datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S%z')
+
+    def _datetime_to_string(self, date):
+        return datetime.datetime.strftime(date, '%Y-%m-%d %H:%M:%S%z')
+
     def _expiration_to_datetime(self, expiration):
         if isinstance(expiration, dict):
-            expiration_time = datetime.datetime.strptime(
-                expiration['aws_expiration'],
-                '%Y-%m-%d %H:%M:%S%z'
-            )
+            date_time = self._string_to_datetime(expiration['aws_expiration'])
         else:
-            expiration_time = datetime.datetime.strptime(
-                expiration,
-                '%Y-%m-%d %H:%M:%S%z'
-            )
-        return expiration_time
+            date_time = self._string_to_datetime(expiration)
+
+        return date_time
 
     def _find_timedelta(self, expiration_datetime):
 
         now_datetime = datetime.datetime.now(datetime.timezone.utc)
-        # expiration_datetime = self._expiration_to_datetime(time)
-
         return  expiration_datetime - now_datetime
