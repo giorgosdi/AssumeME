@@ -2,6 +2,7 @@ import configparser
 import sys
 from os.path import expanduser
 import datetime
+import yaml
 
 import logger
 import api_calls
@@ -45,7 +46,7 @@ class Utility(object):
         self.print_message('Credentials have been created under profile : {}'.format(profile))
 
         self.print_message('Adding a section in `config` file for the new temp-role')
-        self.add_section(profile, aws_config, conf_path, {'region': 'eu-west-1', 'output': 'table'} )
+        self.add_section("profile {}".format(profile), aws_config, conf_path, {'region': 'eu-west-1', 'output': 'table'} )
         self.print_message('Section added')
 
     def add_section(self, profile, parser, parser_path, details):
@@ -94,19 +95,32 @@ class Utility(object):
         return list_of_parsers if len(list_of_parsers) > 0 else list_of_parsers[0]
 
 
-    def discover_sections(self, parser):
+    def discover_sections(self, parser, all, profile):
         sections = parser.sections()
         sections_discovered=[]
-        for section in sections:
-            if parser.has_option(section, 'aws_expiration'):
-                helper = time_helper.TimeHelper()
-                expiration = parser.get(section, 'aws_expiration')
+        if all:
+            for section in sections:
+                if parser.has_option(section, 'aws_expiration'):
+                    helper = time_helper.TimeHelper()
+                    expiration = parser.get(section, 'aws_expiration')
 
-                time = helper._expiration_to_datetime(expiration)
+                    time = helper._expiration_to_datetime(expiration)
 
-                sections_discovered.append(section)
-                self.print_message('Section {} with expiration date {}'.format(section, time))
+                    sections_discovered.append(section)
+                    self.print_message('Section {} with expiration date {}'.format(section, time))
+        else:
+            for section in sections:
+                if profile in section:
+                    if parser.has_option(section, 'aws_expiration'):
+                        helper = time_helper.TimeHelper()
+                        expiration = parser.get(section, 'aws_expiration')
+
+                        time = helper._expiration_to_datetime(expiration)
+
+                        sections_discovered.append(section)
+                        self.print_message('Section {} with expiration date {}'.format(section, time))
         return sections_discovered
+
 
     def valid_sections(self, parser, sections):
         for section in sections:
@@ -135,12 +149,19 @@ class Utility(object):
               if 'y' in choice.lower():
                 parser.remove_section(section)
                 sections_to_be_removed.append(section)
+              else:
+                  self.print_message('Profile skipped')
             else:
               parser.remove_section(section)
               sections_to_be_removed.append(section)
 
         self._write_option_to_config(parser, parser_path)
         [ self.print_message("Section removed : {}".format(section)) for section in sections_to_be_removed ]
+    
+    def read_configuration(self, profile):
+        with open(expanduser("~/.aws/{}.prof".format(profile))) as f:
+            return yaml.load(f)        
+
 
 if '__main__' in __name__:
     print('RUNNING UTILS')
