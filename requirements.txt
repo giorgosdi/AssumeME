@@ -3,3 +3,5 @@ boto3
 ConfigParser
 argparse
 ruamel.yaml
+click
+PyYAML
