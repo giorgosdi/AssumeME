@@ -44,15 +44,15 @@ class Utility(object):
 
         if self.section_exists("{}-temp".format(profile), aws_credential_parser):
             self.print_message('Section already exists')
-            answer = input("Do you want to overwrite the existing temporary credentials ? ")
+            answer = input("Do you want to overwrite the existing temporary credentials ? [y/N]")
 
             if answer.lower() in ['y', 'yes']:
                 self.apply_section("{}-temp".format(profile), aws_credential_parser, credentials_path, creds, 'update')
                 return
             else:
-                section = randint(1000, 9999)
+                section = "{}-{}".format(profile, randint(1000, 9999))
                 self.print_message("Attaching a random 4-letter string in the of your profile")
-                self.apply_section("{}-".format(profile), aws_credential_parser, credentials_path, creds, 'update')
+                self.apply_section(section, aws_credential_parser, credentials_path, creds, 'create')
                 self.print_message("Profile created with name {}".format("{}-{}".format(profile, section)))
 
         else:
