@@ -1,11 +1,11 @@
 import click
-from configure import ConfigureAwsAssumeRole
-from utils import Utility
+from src.configure import ConfigureAwsAssumeRole
+from src.utils import Utility
 from os.path import expanduser
 import os
 import subprocess
 import yaml
-import helper
+import src.helper as helper
 
 class ConfigSetup(click.Group):
     def __init__(self, profile):
@@ -23,7 +23,7 @@ class ConfigSetup(click.Group):
 def actions(ctx):
     if os.path.isfile(expanduser("~/.aws/state")):
         with open(expanduser("~/.aws/state")) as f:
-            content=yaml.load(f)
+            content=yaml.load(f, Loader=yaml.FullLoader)
         
         if content is not None:
             if content.get('profile'):
@@ -45,11 +45,11 @@ def actions(ctx):
 
 
 @actions.command(help="Choose a profile and add it in your state file")
-@click.argument('profile')  # add the name argument
+@click.argument('profile')
 @click.pass_context
 def choose(ctx, profile):
-    aux = helper.Helper()
-    aux.write_state_file({'profile': profile})
+    helper_ = helper.Helper()
+    helper_.write_state_file({'profile': profile})
     ctx.obj = ConfigSetup(profile)
 
 
@@ -62,7 +62,7 @@ assume whoami
 @click.pass_context
 def whoami(ctx):
     with open(expanduser('~/.aws/state')) as f:
-        content = yaml.load(f)
+        content = yaml.load(f, Loader=yaml.FullLoader)
     if content is None:
         print("Jaqen H'ghar, is that you ?")
         print("A girl is No One")
@@ -78,7 +78,7 @@ def whoami(ctx):
 
 Command:
 
-assume create your_name
+assume generate
 """)
 # @click.argument('profile')  # add the name argument
 @click.pass_context
@@ -114,29 +114,19 @@ def clean(ctx):
     if ctx.obj is not None:
         if os.path.isfile(expanduser("~/.aws/state")):
             with open(expanduser("~/.aws/state")) as f:
-                content=yaml.load(f)
+                content=yaml.load(f, Loader=yaml.FullLoader)
             
             if content is not None:
                 if content.get('profile'):
                     profile = ConfigSetup(content['profile'])
 
-    u = Utility()
-
-    # profile_config = u.read_configuration(profile.profile)
-
-    # aws_creds_path=expanduser(profile_config['credentials'])
-    # aws_config_path=expanduser(profile_config['config'])
-
-    # aws_creds, aws_config = u.create_config_parsers([aws_creds_path, aws_config_path])
-
-    # u.clean_sections(aws_creds, aws_creds_path)
 
 @actions.command(help="Configure a new profile with your prefered settings.")
 def configure():
     u = Utility()
 
     u.print_message('Provide your configuration - leave blank for defaults in brackets')
-    name = input('Configuration name [MyNewConfig] : ') or 'MyNewConfig'
+    name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
     config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
     credentials_path = input('AWS credentials path [~/.aws/credentials] : ') or '~/.aws/credentials'
     token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
@@ -160,6 +150,7 @@ def configure():
 def help(ctx):
     print(actions.get_help(ctx))
 
-
-if __name__ == '__main__':
+def main():
     actions()
+# if __name__ == '__main__':
+#     actions()

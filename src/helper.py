@@ -5,7 +5,7 @@ class Helper(object):
     def read_state_file(self,):
         if os.path.isfile(os.path.expanduser("~/.aws/state")):
             with open(os.path.expanduser("~/.aws/state")) as file_:
-                content=yaml.load(file_)
+                content=yaml.load(file_, Loader=yaml.FullLoader)
         return content
 
     def write_state_file(self, content):
@@ -19,7 +19,8 @@ class Helper(object):
                 files.append(file_.split('.')[0])
 
         if files:
-            [ print("- {}".format(file_)) for file_ in files ]
+            for file_ in files:
+                print("- {}".format(file_))
         return files
         
 

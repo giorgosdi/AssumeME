@@ -3,10 +3,11 @@ import sys
 from os.path import expanduser
 import datetime
 import yaml
+from random import randint
 
-import logger
-import api_calls
-import time_helper
+import src.logger as logger
+import src.api_calls as api_calls
+import src.time_helper as time_helper
 
 
 class Utility(object):
@@ -39,19 +40,34 @@ class Utility(object):
         self.print_message('STS session created')
         return api_client.assume_role(profile, sts_client)
 
-    def create_section(self, aws_credential, aws_config, profile, creds, credentials_path, conf_path):
+    def create_section(self, aws_credential_parser, aws_config_parser, profile, creds, credentials_path, conf_path):
 
-        self.print_message('Creating temporary credentials')
-        self.add_section(profile, aws_credential, credentials_path, creds)
-        self.print_message('Credentials have been created under profile : {}'.format(profile))
+        if self.section_exists("{}-temp".format(profile), aws_credential_parser):
+            self.print_message('Section already exists')
+            answer = input("Do you want to overwrite the existing temporary credentials ? [y/N]")
+
+            if answer.lower() in ['y', 'yes']:
+                self.apply_section("{}-temp".format(profile), aws_credential_parser, credentials_path, creds, 'update')
+                return
+            else:
+                section = "{}-{}".format(profile, randint(1000, 9999))
+                self.print_message("Attaching a random 4-letter string in the of your profile")
+                self.apply_section(section, aws_credential_parser, credentials_path, creds, 'create')
+                self.print_message("Profile created with name {}".format("{}-{}".format(profile, section)))
+
+        else:
+            section = "{}-temp".format(profile)
+            self.print_message('Creating temporary credentials')
+            self.apply_section(section, aws_credential_parser, credentials_path, creds, 'create')
+            self.print_message('Credentials have been created under profile : {}'.format(profile))
 
         self.print_message('Adding a section in `config` file for the new temp-role')
-        self.add_section("profile {}".format(profile), aws_config, conf_path, {'region': 'eu-west-1', 'output': 'table'} )
+        self.apply_section("profile {}".format(section), aws_config_parser, conf_path, {'region': 'eu-west-1', 'output': 'table'}, 'create')
         self.print_message('Section added')
 
-    def add_section(self, profile, parser, parser_path, details):
-        section = "{}-temp".format(profile)
-        parser.add_section(section)
+    def apply_section(self, section, parser, parser_path, details, action):
+        if 'create' in action.lower():
+            parser.add_section(section)
         if 'Credentials' in details.keys():
             self._set_section_options(parser, section, details['Credentials'])
         else:
@@ -160,7 +176,7 @@ class Utility(object):
     
     def read_configuration(self, profile):
         with open(expanduser("~/.aws/{}.prof".format(profile))) as f:
-            return yaml.load(f)        
+            return yaml.load(f, Loader=yaml.FullLoader)
 
 
 if '__main__' in __name__:
