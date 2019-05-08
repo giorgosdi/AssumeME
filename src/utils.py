@@ -175,7 +175,7 @@ class Utility(object):
         [ self.print_message("Section removed : {}".format(section)) for section in sections_to_be_removed ]
     
     def read_configuration(self, profile):
-        with open(expanduser("~/.aws/{}.prof".format(profile))) as f:
+        with open(expanduser("~/.assume/{}.prof".format(profile))) as f:
             return yaml.load(f, Loader=yaml.FullLoader)
 
 
