@@ -12,17 +12,18 @@ class ConfigSetup(click.Group):
         u = Utility()
         self.profile = profile
         self.profile_config = u.read_configuration(self.profile)
-
+        self.application_home_dir = expanduser("~/.assume")
         self.aws_creds_path=expanduser(self.profile_config['credentials'])
         self.aws_config_path=expanduser(self.profile_config['config'])
         self.aws_creds, self.aws_config = u.create_config_parsers([self.aws_creds_path, self.aws_config_path])
 
+APPLICATION_HOME_DIR = expanduser("~/.assume")
 
 @click.group()
 @click.pass_context
 def actions(ctx):
-    if os.path.isfile(expanduser("~/.aws/state")):
-        with open(expanduser("~/.aws/state")) as f:
+    if os.path.isfile("{}/state".format(APPLICATION_HOME_DIR)):
+        with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
             content=yaml.load(f, Loader=yaml.FullLoader)
         
         if content is not None:
@@ -49,8 +50,18 @@ def actions(ctx):
 @click.pass_context
 def choose(ctx, profile):
     helper_ = helper.Helper()
-    helper_.write_state_file({'profile': profile})
-    ctx.obj = ConfigSetup(profile)
+    profiles = helper_.get_profiles()
+    if profile in profiles:
+        helper_.write_state_file({'profile': profile})
+        ctx.obj = ConfigSetup(profile)
+    else:
+        print("The profile does not exist")
+        if profiles:
+            print("Pick one of the")
+            for p in profiles:
+                print("- {}".format(p))
+        else:
+            print("There are no profiles. Configure a profile please")
 
 
 @actions.command(help="""Tells you what is you current profile, based on your `state` file
@@ -61,7 +72,7 @@ assume whoami
 """)
 @click.pass_context
 def whoami(ctx):
-    with open(expanduser('~/.aws/state')) as f:
+    with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
         content = yaml.load(f, Loader=yaml.FullLoader)
     if content is None:
         print("Jaqen H'ghar, is that you ?")
@@ -100,7 +111,6 @@ def generate(ctx):
 @click.option('--all', default=False, is_flag=True)
 @click.pass_context
 def show(ctx, all):
-
     if ctx.obj is None:
         print("A girl is No One. Pick a user with `choose` or configure one with `configure`")
         exit(1)
@@ -112,8 +122,8 @@ def show(ctx, all):
 @click.pass_context
 def clean(ctx):
     if ctx.obj is not None:
-        if os.path.isfile(expanduser("~/.aws/state")):
-            with open(expanduser("~/.aws/state")) as f:
+        if os.path.isfile("{}/state".format(APPLICATION_HOME_DIR)):
+            with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
                 content=yaml.load(f, Loader=yaml.FullLoader)
             
             if content is not None:
