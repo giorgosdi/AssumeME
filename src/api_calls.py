@@ -9,8 +9,8 @@ class CustomApi(object):
         # self.profile_section = 'profile {}'.format(self.section)
         return sts
 
-    def assume_role(self, profile, sts_client):
+    def assume_role(self, sts_client, state):
         # role_name, account_number = self.get_details_from_config(profile)
         # print("Creating temporary credentials for " + colored("{}", 'green').format(profile) + " account...")
-        creds = sts_client.assume_role(RoleArn='arn:aws:iam::180462570280:role/{}'.format('test-role'), RoleSessionName="temporary-role-{}-{}".format('profile', "test-role") )
+        creds = sts_client.assume_role(RoleArn='arn:aws:iam::{}:role/{}'.format(state['account'], state['role']]), RoleSessionName="temporary-role-{}-{}".format(state['profile'], state['role']) )
         return creds

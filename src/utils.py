@@ -8,6 +8,7 @@ from random import randint
 import src.logger as logger
 import src.api_calls as api_calls
 import src.time_helper as time_helper
+import src.helper as helper
 
 
 class Utility(object):
@@ -35,10 +36,12 @@ class Utility(object):
         return True if config_path.has_section(section) else  False
 
     def get_credentials(self, profile):
+        helper_ = helper.Helper()
         api_client = api_calls.CustomApi()
         sts_client = api_client.create_session(profile)
         self.print_message('STS session created')
-        return api_client.assume_role(profile, sts_client)
+        state = helper_.read_file('state')
+        return api_client.assume_role(sts_client, state)
 
     def create_section(self, aws_credential_parser, aws_config_parser, profile, creds, credentials_path, conf_path):
 
