@@ -188,7 +188,7 @@ def config(ctx, set, get, add_profile, delete_profile):
                 content[key.strip()] = value.strip()
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
         elif get:
-            if 'state' in get:
+            if 'state' in get.strip():
                 u.print_message(helper_.read_file('state'))
                 state = helper_.read_file('state')
                 for k,v in state.items():
@@ -199,22 +199,22 @@ def config(ctx, set, get, add_profile, delete_profile):
                 u.print_message("There is no attribute : {}".format(get))
         elif add_profile:
             user, role_and_account = add_profile.split(".")
-            role, account = role_and_account.split(':')
-            if user in content['credentials_profile']:
-                content['credentials_profile'][user].update({role: account})
+            role, account = role_and_account.strip().split(':')
+            if user.strip() in content['credentials_profile']:
+                content['credentials_profile'][user.strip()].update({role.strip(): account.strip()})
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
                 u.print_message("New role `{}` added with account number `{}` for user `{}`".format(role, account, user))
             else:
-                content['credentials_profile'][user] = {role: account}
+                content['credentials_profile'][user.strip()] = {role.strip(): account.strip()}
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
                 u.print_message("New user added `{}` withe role `{}` and account number `{}`".format(user, role, account))
         elif delete_profile:
             if "." in delete_profile:
                 user, role = delete_profile.split(".")
-                del content['credentials_profile'][user][role]
+                del content['credentials_profile'][user.strip()][role.strip()]
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
             else:
-                del content['credentials_profile'][delete_profile]
+                del content['credentials_profile'][delete_profile.strip()]
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
     else:
         u = Utility()
