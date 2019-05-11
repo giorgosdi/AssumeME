@@ -6,7 +6,7 @@ class Helper(object):
         if os.path.isfile(os.path.expanduser("~/.assume/{}".format(file_))):
             with open(os.path.expanduser("~/.assume/{}".format(file_))) as f:
                 content=yaml.load(f, Loader=yaml.FullLoader)
-        return content
+            return content
 
     def write_file(self, file_, content):
         with open(os.path.expanduser("~/.assume/{}".format(file_)), "w+") as f:

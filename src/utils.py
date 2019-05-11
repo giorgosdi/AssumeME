@@ -51,6 +51,8 @@ class Utility(object):
 
             if answer.lower() in ['y', 'yes']:
                 self.apply_section("{}-temp".format(profile), aws_credential_parser, credentials_path, creds, 'update')
+                
+                self.print_message("Profile created with name {}".format(profile))
                 return
             else:
                 section = "{}-{}".format(profile, randint(1000, 9999))

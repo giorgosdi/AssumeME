@@ -10,8 +10,10 @@ import src.helper as helper
 class ConfigSetup(click.Group):
     def __init__(self, profile):
         u = Utility()
+        helper_ = helper.Helper()
         self.profile = profile
         self.profile_config = u.read_configuration(self.profile)
+        self.current_state = helper_.read_file('state')
         self.application_home_dir = expanduser("~/.assume")
         self.aws_creds_path=expanduser(self.profile_config['credentials'])
         self.aws_config_path=expanduser(self.profile_config['config'])
@@ -35,7 +37,17 @@ def actions(ctx):
             profile=input('Choose one of these profiles : ')
             while profile not in profiles:
                 profile=input('This profile does not exist. Choose a profile from the list above : ')
-            helper_.write_file('state', {'profile': profile})
+            content = helper_.read_file('{}.prof'.format(profile))
+            profile_ = content['profile']
+            user_ = list(content['credentials_profile'].keys())[0]
+            role_ = list(content['credentials_profile'][user_].keys())[0]
+            account_ = content['credentials_profile'][user_][role_]
+            helper_.write_file('state', {
+                    'profile': profile_,
+                    'user': user_,
+                    'role': role_,
+                    'account': account_
+                })
             ctx.obj = ConfigSetup(profile)
         else:
             print("There are no profiles available, you should create a new profile.")
@@ -45,12 +57,42 @@ def actions(ctx):
 
 @actions.command(help="Choose a profile and add it in your state file")
 @click.argument('profile')
+@click.option('--role')
+@click.option('--user')
 @click.pass_context
-def choose(ctx, profile):
+def choose(ctx, profile, user, role):
     helper_ = helper.Helper()
+    details = helper_.read_file("{}.prof".format(profile))
+    users = list(details['credentials_profile'].keys())
+    
+    if not user:
+        print("You have these users:")
+        for u in users:
+            print('- {}'.format(u))
+        user = input("Pick a role : ")
+
+    while user not in users:
+        user = input("The user you chose does not exist.. Pick a valid user")
+    
+    roles = list(details['credentials_profile'][user].keys())
+    if not role:
+        print("You have these roles:")
+        for r in roles:
+            print('- {}'.format(r))
+        role = input("Pick a role : ")
+
+    while role not in roles:
+        role = input("The role you chose does not exist. Pick a valid role : ")
+    
     profiles = helper_.get_profiles()
+    info = {
+            'profile': profile,
+            'user': user,
+            'role': role,
+            'account': details['credentials_profile'][user][role]
+            }
     if profile in profiles:
-        helper_.write_file('state', {'profile': profile})
+        helper_.write_file('state', info)
         ctx.obj = ConfigSetup(profile)
     else:
         print("The profile does not exist")
@@ -93,12 +135,12 @@ assume generate
 @click.pass_context
 def generate(ctx):
     u = Utility()
-    creds = u.get_credentials(ctx.obj.profile_config['credentials_profile'])
+    creds = u.get_credentials(ctx.obj.current_state['user'])
     aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
     u.create_section(
         aws_creds,
         aws_config,
-        ctx.obj.profile_config['credentials_profile'],
+        ctx.obj.current_state['user'],
         creds,
         ctx.obj.aws_creds_path,
         ctx.obj.aws_config_path
