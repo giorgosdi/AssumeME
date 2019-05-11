@@ -5,7 +5,7 @@ from os.path import expanduser
 class ConfigureAwsAssumeRole(object):
     """docstring for ConfigureAwsAssumeRole."""
     def __init__(self, config_path="~/.aws/config", credentials_path="~/.aws/credentials",
-        configuration_name="mydefaultprofile", token_duration=3600, region="eu-west-1", output="test", credentials_profile="mydefaultprofile"):
+        configuration_name="mydefaultprofile", token_duration=3600, region="eu-west-1", output="test", credentials_profile="mydefaultprofile", roles_and_accounts={}):
         super(ConfigureAwsAssumeRole, self).__init__()
         self.aws_config_path = expanduser(config_path)
         self.aws_credentials_path = expanduser(credentials_path)
@@ -18,7 +18,7 @@ class ConfigureAwsAssumeRole(object):
             'duration': token_duration,
             'region': region,
             'output': output,
-            'credentials_profile': credentials_profile
+            'credentials_profile': roles_and_accounts
         }
 
     def create_config(self, configuration):

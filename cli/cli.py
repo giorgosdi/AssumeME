@@ -10,8 +10,10 @@ import src.helper as helper
 class ConfigSetup(click.Group):
     def __init__(self, profile):
         u = Utility()
+        helper_ = helper.Helper()
         self.profile = profile
         self.profile_config = u.read_configuration(self.profile)
+        self.current_state = helper_.read_file('state')
         self.application_home_dir = expanduser("~/.assume")
         self.aws_creds_path=expanduser(self.profile_config['credentials'])
         self.aws_config_path=expanduser(self.profile_config['config'])
@@ -22,22 +24,30 @@ APPLICATION_HOME_DIR = expanduser("~/.assume")
 @click.group()
 @click.pass_context
 def actions(ctx):
+    helper_ = helper.Helper()
     if os.path.isfile("{}/state".format(APPLICATION_HOME_DIR)):
-        with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
-            content=yaml.load(f, Loader=yaml.FullLoader)
-        
+        content = helper_.read_file('state')
         if content is not None:
             if content.get('profile'):
                 ctx.obj = ConfigSetup(content['profile'])
     else:
         print("State file does not exists.")
-        aux = helper.Helper()
-        profiles = aux.get_profiles()
+        profiles = helper_.get_profiles()
         if profiles:
             profile=input('Choose one of these profiles : ')
             while profile not in profiles:
                 profile=input('This profile does not exist. Choose a profile from the list above : ')
-            aux.write_state_file({'profile': profile})
+            content = helper_.read_file('{}.prof'.format(profile))
+            profile_ = content['profile']
+            user_ = list(content['credentials_profile'].keys())[0]
+            role_ = list(content['credentials_profile'][user_].keys())[0]
+            account_ = content['credentials_profile'][user_][role_]
+            helper_.write_file('state', {
+                    'profile': profile_,
+                    'user': user_,
+                    'role': role_,
+                    'account': account_
+                })
             ctx.obj = ConfigSetup(profile)
         else:
             print("There are no profiles available, you should create a new profile.")
@@ -47,12 +57,42 @@ def actions(ctx):
 
 @actions.command(help="Choose a profile and add it in your state file")
 @click.argument('profile')
+@click.option('--role')
+@click.option('--user')
 @click.pass_context
-def choose(ctx, profile):
+def choose(ctx, profile, user, role):
     helper_ = helper.Helper()
+    details = helper_.read_file("{}.prof".format(profile))
+    users = list(details['credentials_profile'].keys())
+    
+    if not user:
+        print("You have these users:")
+        for u in users:
+            print('- {}'.format(u))
+        user = input("Pick a role : ")
+
+    while user not in users:
+        user = input("The user you chose does not exist.. Pick a valid user")
+    
+    roles = list(details['credentials_profile'][user].keys())
+    if not role:
+        print("You have these roles:")
+        for r in roles:
+            print('- {}'.format(r))
+        role = input("Pick a role : ")
+
+    while role not in roles:
+        role = input("The role you chose does not exist. Pick a valid role : ")
+    
     profiles = helper_.get_profiles()
+    info = {
+            'profile': profile,
+            'user': user,
+            'role': role,
+            'account': details['credentials_profile'][user][role]
+            }
     if profile in profiles:
-        helper_.write_state_file({'profile': profile})
+        helper_.write_file('state', info)
         ctx.obj = ConfigSetup(profile)
     else:
         print("The profile does not exist")
@@ -95,12 +135,12 @@ assume generate
 @click.pass_context
 def generate(ctx):
     u = Utility()
-    creds = u.get_credentials(ctx.obj.profile_config['credentials_profile'])
+    creds = u.get_credentials(ctx.obj.current_state['user'])
     aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
     u.create_section(
         aws_creds,
         aws_config,
-        ctx.obj.profile_config['credentials_profile'],
+        ctx.obj.current_state['user'],
         creds,
         ctx.obj.aws_creds_path,
         ctx.obj.aws_config_path
@@ -134,7 +174,7 @@ def clean(ctx):
 @actions.command(help="Configure a new profile with your prefered settings.")
 def configure():
     u = Utility()
-
+    user_to_roles = {}
     u.print_message('Provide your configuration - leave blank for defaults in brackets')
     name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
     config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
@@ -142,7 +182,15 @@ def configure():
     token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
     region = input('Region [eu-west-1] : ') or 'eu-west-1'
     output = input('Output [text] : ') or 'text'
-    profile = input('Profile to associate this configuration [default] : ') or 'default'
+    profiles = input('Profile to associate this configuration [default] (For multiple profiles separate by `,`): ') or 'default'
+    # roles_and_accounts = input('Roles - accounts that you want to assume [Admin - 123456789]') or 'Admin - 123456789'
+
+    for profile in profiles.split(','):
+        user_to_roles[profile.strip()] = input("Provide a role and the account number for profile {} : ".format(profile.strip()))
+    for k,v in user_to_roles.items():
+        roles_and_accounts_pairs = v.split('-')
+        user_to_roles[k] = {roles_and_accounts_pairs[0].strip(): roles_and_accounts_pairs[1].strip()}
+    
 
     conf = ConfigureAwsAssumeRole(
         config_path=config_path,
@@ -151,7 +199,8 @@ def configure():
         token_duration=token_duration,
         region=region,
         output=output,
-        credentials_profile=profile
+        credentials_profile=profiles,
+        roles_and_accounts=user_to_roles
     )
     conf.create_config(conf.config)
 
