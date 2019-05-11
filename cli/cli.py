@@ -175,8 +175,9 @@ def clean(ctx):
 @click.option('--set')
 @click.option('--get')
 @click.option('--add-profile')
+@click.option('--delete-profile')
 @click.pass_context
-def config(ctx, set, get, add_profile):
+def config(ctx, set, get, add_profile, delete_profile):
     helper_ = helper.Helper()
     u = Utility()
     if ctx.obj.profile:
@@ -207,6 +208,14 @@ def config(ctx, set, get, add_profile):
                 content['credentials_profile'][user] = {role: account}
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
                 u.print_message("New user added `{}` withe role `{}` and account number `{}`".format(user, role, account))
+        elif delete_profile:
+            if "." in delete_profile:
+                user, role = delete_profile.split(".")
+                del content['credentials_profile'][user][role]
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+            else:
+                del content['credentials_profile'][delete_profile]
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
     else:
         u = Utility()
         user_to_roles = {}
