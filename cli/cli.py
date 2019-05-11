@@ -51,7 +51,7 @@ def actions(ctx):
             ctx.obj = ConfigSetup(profile)
         else:
             print("There are no profiles available, you should create a new profile.")
-            configure()
+            config()
                 
 
 
@@ -172,37 +172,81 @@ def clean(ctx):
 
 
 @actions.command(help="Configure a new profile with your prefered settings.")
-def configure():
+@click.option('--set')
+@click.option('--get')
+@click.option('--add-profile')
+@click.option('--delete-profile')
+@click.pass_context
+def config(ctx, set, get, add_profile, delete_profile):
+    helper_ = helper.Helper()
     u = Utility()
-    user_to_roles = {}
-    u.print_message('Provide your configuration - leave blank for defaults in brackets')
-    name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
-    config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
-    credentials_path = input('AWS credentials path [~/.aws/credentials] : ') or '~/.aws/credentials'
-    token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
-    region = input('Region [eu-west-1] : ') or 'eu-west-1'
-    output = input('Output [text] : ') or 'text'
-    profiles = input('Profile to associate this configuration [default] (For multiple profiles separate by `,`): ') or 'default'
-    # roles_and_accounts = input('Roles - accounts that you want to assume [Admin - 123456789]') or 'Admin - 123456789'
+    if ctx.obj.profile:
+        content = helper_.read_file("{}.prof".format(ctx.obj.profile))
+        if set:
+            key, value = set.split('=')
+            if key.strip() in content.keys():
+                content[key.strip()] = value.strip()
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+        elif get:
+            if 'state' in get.strip():
+                u.print_message(helper_.read_file('state'))
+                state = helper_.read_file('state')
+                for k,v in state.items():
+                    u.print_message("{}: {}".format(k,v))
+            elif get in content:
+                u.print_message("The value for {} is {}".format(get, content[get]))
+            else:
+                u.print_message("There is no attribute : {}".format(get))
+        elif add_profile:
+            user, role_and_account = add_profile.split(".")
+            role, account = role_and_account.strip().split(':')
+            if user.strip() in content['credentials_profile']:
+                content['credentials_profile'][user.strip()].update({role.strip(): account.strip()})
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+                u.print_message("New role `{}` added with account number `{}` for user `{}`".format(role, account, user))
+            else:
+                content['credentials_profile'][user.strip()] = {role.strip(): account.strip()}
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+                u.print_message("New user added `{}` withe role `{}` and account number `{}`".format(user, role, account))
+        elif delete_profile:
+            if "." in delete_profile:
+                user, role = delete_profile.split(".")
+                del content['credentials_profile'][user.strip()][role.strip()]
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+            else:
+                del content['credentials_profile'][delete_profile.strip()]
+                helper_.write_file("{}.prof".format(ctx.obj.profile), content)
+    else:
+        u = Utility()
+        user_to_roles = {}
+        u.print_message('Provide your configuration - leave blank for defaults in brackets')
+        name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
+        config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
+        credentials_path = input('AWS credentials path [~/.aws/credentials] : ') or '~/.aws/credentials'
+        token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
+        region = input('Region [eu-west-1] : ') or 'eu-west-1'
+        output = input('Output [text] : ') or 'text'
+        profiles = input('Profile to associate this configuration [default] (For multiple profiles separate by `,`): ') or 'default'
+        # roles_and_accounts = input('Roles - accounts that you want to assume [Admin - 123456789]') or 'Admin - 123456789'
 
-    for profile in profiles.split(','):
-        user_to_roles[profile.strip()] = input("Provide a role and the account number for profile {} : ".format(profile.strip()))
-    for k,v in user_to_roles.items():
-        roles_and_accounts_pairs = v.split('-')
-        user_to_roles[k] = {roles_and_accounts_pairs[0].strip(): roles_and_accounts_pairs[1].strip()}
-    
+        for profile in profiles.split(','):
+            user_to_roles[profile.strip()] = input("Provide a role and the account number for profile {} : ".format(profile.strip()))
+        for k,v in user_to_roles.items():
+            roles_and_accounts_pairs = v.split('-')
+            user_to_roles[k] = {roles_and_accounts_pairs[0].strip(): roles_and_accounts_pairs[1].strip()}
+        
 
-    conf = ConfigureAwsAssumeRole(
-        config_path=config_path,
-        credentials_path=credentials_path,
-        configuration_name=name,
-        token_duration=token_duration,
-        region=region,
-        output=output,
-        credentials_profile=profiles,
-        roles_and_accounts=user_to_roles
-    )
-    conf.create_config(conf.config)
+        conf = ConfigureAwsAssumeRole(
+            config_path=config_path,
+            credentials_path=credentials_path,
+            configuration_name=name,
+            token_duration=token_duration,
+            region=region,
+            output=output,
+            credentials_profile=profiles,
+            roles_and_accounts=user_to_roles
+        )
+        conf.create_config(conf.config)
 
 @actions.command(help="You are using it right now")
 @click.pass_context

@@ -47,7 +47,7 @@ class Utility(object):
 
         if self.section_exists("{}-temp".format(profile), aws_credential_parser):
             self.print_message('Section already exists')
-            answer = input("Do you want to overwrite the existing temporary credentials ? [y/N]")
+            answer = input("Do you want to overwrite the existing temporary credentials ? [y/N] : ")
 
             if answer.lower() in ['y', 'yes']:
                 self.apply_section("{}-temp".format(profile), aws_credential_parser, credentials_path, creds, 'update')
