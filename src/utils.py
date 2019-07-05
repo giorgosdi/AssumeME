@@ -29,11 +29,17 @@ class Utility(object):
             self.logger.error("{} in line {}:\n{}".format(message, exc_tb.tb_lineno, error))
 
     def section_exists(self, section, config_path):
+        found = False
         if config_path.has_section(section):
             self.print_message('Section exists')
+            found=True
+        elif config_path.has_section("profile {}".format(section)):
+            self.print_message("Section exists")
+            found = True
         else:
             self.print_message('Section not found')
-        return True if config_path.has_section(section) else  False
+            found = False
+        return found
 
     def get_credentials(self, profile):
         helper_ = helper.Helper()
@@ -44,16 +50,16 @@ class Utility(object):
         return api_client.assume_role(sts_client, state)
 
     def create_section(self, aws_credential_parser, aws_config_parser, profile, creds, credentials_path, conf_path):
+        self.print_message(profile)
 
         if self.section_exists("{}-temp".format(profile), aws_credential_parser):
             self.print_message('Section already exists')
             answer = input("Do you want to overwrite the existing temporary credentials ? [y/N] : ")
 
             if answer.lower() in ['y', 'yes']:
-                self.apply_section("{}-temp".format(profile), aws_credential_parser, credentials_path, creds, 'update')
-                
+                section = "{}-temp".format(profile)
+                self.apply_section("{}".format(section), aws_credential_parser, credentials_path, creds, 'update')
                 self.print_message("Profile created with name {}".format(profile))
-                return
             else:
                 section = "{}-{}".format(profile, randint(1000, 9999))
                 self.print_message("Attaching a random 4-letter string in the of your profile")
@@ -65,10 +71,12 @@ class Utility(object):
             self.print_message('Creating temporary credentials')
             self.apply_section(section, aws_credential_parser, credentials_path, creds, 'create')
             self.print_message('Credentials have been created under profile : {}'.format(profile))
-
-        self.print_message('Adding a section in `config` file for the new temp-role')
-        self.apply_section("profile {}".format(section), aws_config_parser, conf_path, {'region': 'eu-west-1', 'output': 'table'}, 'create')
-        self.print_message('Section added')
+        if self.section_exists("{}-temp".format(profile), aws_config_parser):
+            self.print_message("Profile exists in the AWS config. No further action needed")
+        else:
+            self.print_message('Adding a section in `config` file for the new temp-role')
+            self.apply_section("profile {}".format(section), aws_config_parser, conf_path, {'region': 'eu-west-1', 'output': 'table'}, 'create')
+            self.print_message('Section added')
 
     def apply_section(self, section, parser, parser_path, details, action):
         if 'create' in action.lower():
@@ -159,24 +167,28 @@ class Utility(object):
             timedelta = helper._find_timedelta(time)
             return timedelta if timedelta.total_seconds()>0 else False
 
-    def clean_sections(self, parser, parser_path):
+    def clean_sections(self, parsers, parser_paths):
         sections_to_be_removed=[]
-        sections = parser.sections()
-        for section in sections:
-          if parser.has_option(section, 'aws_expiration'):
-            timedelta = self._is_section_valid(parser, section)
-            if timedelta:
-              choice = input("Do you want to remove section {} - It is still valid for {} : ".format(section, timedelta))
-              if 'y' in choice.lower():
-                parser.remove_section(section)
-                sections_to_be_removed.append(section)
-              else:
-                  self.print_message('Profile skipped')
+        config_sections = parsers['config'].sections()
+        credentials_sections = parsers['credentials'].sections()
+        for section in config_sections:
+            if parsers['config'].has_option(section, 'aws_expiration'):
+                timedelta = self._is_section_valid(parsers['config'], section)
+                if timedelta:
+                    choice = input("Do you want to remove section {} - It is still valid for {} : ".format(section, timedelta))
+                    if 'y' in choice.lower():
+                        parsers['config'].remove_section(section)
+                        parsers['credentials'].remove_section(section)
+                        sections_to_be_removed.append(section)
+                    else:
+                        self.print_message('Profile skipped')
             else:
-              parser.remove_section(section)
-              sections_to_be_removed.append(section)
+                parsers['config'].remove_section(section)
+                parsers['credentials'].remove_section(section)
+                sections_to_be_removed.append(section)
 
-        self._write_option_to_config(parser, parser_path)
+        self._write_option_to_config(parsers['config'], parser_paths['config'])
+        self._write_option_to_config(parsers['credentials'], parser_paths['credentials'])
         [ self.print_message("Section removed : {}".format(section)) for section in sections_to_be_removed ]
     
     def read_configuration(self, profile):

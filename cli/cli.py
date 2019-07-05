@@ -168,7 +168,18 @@ def clean(ctx):
             
             if content is not None:
                 if content.get('profile'):
+                    u = Utility()
                     profile = ConfigSetup(content['profile'])
+                    parsers = {
+                        "config": ctx.obj.aws_config,
+                        "credentials": ctx.obj.aws_creds
+                    }
+                    paths = {
+                        "config": ctx.obj.aws_config_path,
+                        "credentials": ctx.obj.aws_creds_path
+                    }
+                    u.clean_sections(parsers, paths)
+
 
 
 @actions.command(help="Configure a new profile with your prefered settings.")
