@@ -1,70 +1,71 @@
 # Temporary Credentials for AWS account
 
-Create an alias in your bash_profile:
+`asm` is a small CLI tool that allows you to assume your desired role and sets your new credentials in your `aws` directory for you. You can hold multiple profiles for different purposes that point to different `aws` configuration files. In the same profile your can have multiple roles that you can assume and you can select them from the CLI.
 
-`alias tc='python ~/path/to/temp_creds.py'`
+When you install `asm`, a directory will be created that is used by the CLI tool under your home directory `~/.assume/`. In there the state file exists that holds information about your current state like the profile you are using, the role you want to assume etc..
 
-## Options
-`-p` or `--profile`
-
-Provide the profile that you want to use and the script will create temporary credentials for you
-
-## Usage
-`tc -p <profile name>`
-
-## Example
-_The following credentials are just for demostration_
-`tc -p tempcreds`
-
-### Output
-
-```bash
-There are no temporary credentials for this profile
-Creating a section for this profile..
-Existing access key : placeholder
-Existing secret key : placeholder
-Creating temporary credentials for kubeguide account...
-Writing new credentials to file..
-New access key : ASIAIEJ62UQVIGY53ZEA
-New secret key : sJjBbDdbf13rrSW2BBdEd1IjkqCI6RRYULDpTKwh
-New token : FQoDYXdzEB4aDChLsU9pvh73uOh1oSKGAkoK6Dm6dx8MXUDURQtpkgzdO69eSoTDuZzSkdFaheQBjhfgRTvKI0bQYRzqeSug39SRjNQOTcakM1fLSbjKlLqGD3MizNpkiMx+/2WO+AabLfMX6wzim5JoAsV7w7FwRt3TeCwnMmOvqlIzLKdCOm1BAxpWtEzPVwVRQhoA7rL7a5hOX2H/69Fh62T2ybMqnnmsGFJHuxAb1SaGx3dmzpLpVrR5/9UeTuXyHfl5KdsXMRcBEX3G49WGxiGLi3Q9CCcqNYskB0b4hCIwALHhnANfc85gt5bnNkjFLPC2FlkUf9vOOCtZr1f9AjE2jixNMCNXV73rFuGpZw9Pn3vvD0L9a0BCLTcoxqz22AU=
+```yaml
+account: '111122234455'
+profile: myprofile
+role: myrole
+user: myuser
 ```
 
-### AWS config file
+## Options and Usage
 
-An example of how the ~/.aws/config should look like before you run the `temp_creds.py`:
+**choose** : will let you choose a profile you created with a specific user and role
+- `asm choose <profile> --user <user> --role <role>`
 
-```bash
-[profile mysourceprofile]
-output = text
-region = eu-west-2
+**whoami** : will tell you which is your current profile
+- `asm whoami`
 
-[profile tempcreds]
-role_arn = arn:aws:iam::123456789012:role/role-name
-source_profile = mysourceprofile
-output = text
-region = eu-west-2
+**generate** : will create new credentials for the role you want to assume
+- `asm generate`
+
+**show** : will give you the active credentials under the current profile. You can see all credentials, active or not with the flag `--all`
+- `asm show`
+- `asm show --all`
+
+**clean** : 
+- `asm clean`
+
+**config** : can create a profile if you have non selected. `asm` will then give you a series of attributes to fill in to create the profile. If you do have a profile selected already, you can get the value for specific attributes or set a specific attribute to a new value. Last but not least you can add or remove an AWS profile in your current profile.
+- `asm config`
+- `asm config --get <attribute>`
+- `asm config --set <attribute>=<new value>` 
+- `asm config --add-profile <user>.<role>:<account>`
+- `asm config --delete-profile <user>.<role>` to delete one role
+- `asm config --delete-profile <user>` to delete all roles
+
+**help** : will give you the `--help` output
+- `asm help`
+
+## Install for development
+
+You can easily install using `pip` for local development.
+
+command : `pip install . -vvv` for extended output on what happens under the hood
+
+
+## Profile structure
+
+```yaml config: /Users/giorgosdimitirou/.aws/config
+credentials: /Users/giorgosdimitirou/.aws/credentials
+credentials_profile:
+  myuser:
+    Admin: '111122234455'
+duration: '86400'
+name: clz
+output: table
+region: eu-west-1
 ```
-
-### AWS credentials file
-
-An example of how the ~/.aws/credentials file should look like before you run the script:
-
-```bash
-[mysourceprofile]
-aws_access_key_id = <ACCESS KEY>
-aws_secret_access_key = <SECRET KEY>
-```
-
-After running the script, the credentials file should look like this:
-
-```bash
-[mysourceprofile]
-aws_access_key_id = <ACCESS KEY>
-aws_secret_access_key = <SECRET KEY>
-
-[tempcreds-temp]
-aws_access_key_id = <NEW ACCESS KEY>
-aws_secret_access_key = <NEW SECRET KEY>
-aws_session_token = <NEW SESSION TOKEN>
+```yaml
+credentials   : the path to your credentials file
+myuser        : the user you want to use to assume your desired role
+Admin         : the role you want to assume
+111122234455  : the account the role is in
+duration      : how long the temporary credentials will last for
+name          : the name of the profile (has nothing to do with AWS)
+output        : your desired output (text, table, json, etc)
+region        : the region you are calling apis against
 ```
