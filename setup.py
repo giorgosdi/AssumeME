@@ -3,7 +3,7 @@ import os
 
 home = os.path.expanduser("~")
 
-setup(name='Assume role',
+setup(name='asm',
       version='0.1',
       description='Easy and simple role assumtion for AWS',
       author='Giorgos Dimitriou',
@@ -24,5 +24,9 @@ setup(name='Assume role',
             'console_scripts': [
                   'asm = cli.cli:main',
             ],
-      }
+      },
+      classifiers=[
+            "Programming Language :: Python :: 3",
+            "Environment :: Console",
+      ]
      )
