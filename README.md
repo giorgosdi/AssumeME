@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/giorgosdi/AssumeME/tree/master.svg?style=shield)](https://circleci.com/gh/giorgosdi/AssumeME/tree/master)
+
 # Temporary Credentials for AWS account
 
 `asm` is a small CLI tool that allows you to assume your desired role and sets your new credentials in your `aws` directory for you. You can hold multiple profiles for different purposes that point to different `aws` configuration files. In the same profile your can have multiple roles that you can assume and you can select them from the CLI.
