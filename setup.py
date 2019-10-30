@@ -4,7 +4,7 @@ import os
 home = os.path.expanduser("~")
 
 setup(name='asm',
-      version='0.2.2',
+      version='0.2.4',
       description='Easy and simple role assumption for AWS',
       author='Giorgos Dimitriou',
       author_email='giwrgosdi@gmail.com',
