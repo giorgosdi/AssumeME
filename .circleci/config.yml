@@ -45,7 +45,7 @@ jobs:
       - run:
           name: run tests
           command: |
-            pytest
+            python -m pytest
 workflows:
   version: 2
   main:
