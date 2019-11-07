@@ -50,12 +50,13 @@ workflows:
   version: 2
   main:
     jobs:
-    - build_package:
-        requires:
-          - run_tests
-        filters:
-          tags:
-            only: /v[0-9]+(\.[0-9]+)*/
+      - run_tests
+      - build_package:
+          requires:
+            - run_tests
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
   test:
     jobs:
       - run_tests
