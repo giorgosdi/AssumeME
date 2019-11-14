@@ -1,5 +1,26 @@
 version: 2
 jobs:
+  environment_variables:
+    docker: alpine
+  steps:
+    - checkout
+    - run:
+        name: Set environment variables
+        command: |
+          export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1) >> $BASH_ENV
+  build_image:
+    docker:
+      - image: docker:latest
+    steps:
+      - checkout
+      - run:
+          name: Build container image
+          command: |
+            echo ${TAG}
+            echo ${CIRCLE_BRANCH}
+            # docker image build -t giorgosdi/asm:${TAG}-${CIRCLE_BRANCH}
+
+
   build_package:
     docker:
       - image: giorgosdi/asm-0.2.5:latest
@@ -37,3 +58,9 @@ workflows:
   test:
     jobs:
       - run_tests
+  build_image:
+    jobs:
+      - environment_variables
+      - build_image:
+          requires:
+            - environment_variables
