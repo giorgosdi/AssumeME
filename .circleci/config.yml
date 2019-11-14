@@ -1,49 +1,43 @@
 version: 2
 jobs:
-  environment_variables:
-    docker:
-      - image: alpine
-    steps:
-      - checkout
-      - run:
-          name: Set environment variables
-          command: |
-            export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1)
-            echo 'export TEST1=HELLO' >> $BASH_ENV
-            source $BASH_ENV
-      - run:
-          name: echo me
-          command: |
-            source $BASH_ENV
-            echo ${TEST1}
-            echo ${TAG}
   build_image:
     docker:
-      - image: alpine
+      - image: docker:latest
     steps:
       - checkout
       - run:
           name: Set environment variables
           command: |
-            echo 'export TEST2=IAMHERE'
-            echo "export TEST1=$(cat setup.py | grep version | cut -d = -f 2 | cut -d \' -f 2 | cut -d \' -f 1)" >> $BASH_ENV
+            echo "export TAG=$(cat setup.py | grep version | cut -d = -f 2 | cut -d \' -f 2 | cut -d \' -f 1)" >> $BASH_ENV
             source $BASH_ENV
       - run:
           name: Build container image
           command: |
             source $BASH_ENV
-            echo ${TEST1}
-            echo ${TEST2}
-            echo ${CIRCLE_BRANCH}
-            # docker image build -t giorgosdi/asm:${TAG}-${CIRCLE_BRANCH}
+            ls
+            docker image build -t giorgosdi/asm:${TAG}-${CIRCLE_BRANCH} .
+  push_image:
+    docker:
+      - image: docker:latest
+    steps:
+      - checkout
+      - run:
+          name: Set environment variables
+          command: |
+            echo "export TAG=$(cat setup.py | grep version | cut -d = -f 2 | cut -d \' -f 2 | cut -d \' -f 1)" >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Push image to dockerhub
+          command: |
+            source $BASH_ENV
+            docker image push giorgosdi/asm:${TAG}-${CIRCLE_BRANCH}
 
 
   build_package:
     docker:
-      - image: giorgosdi/asm-0.2.5:latest
+      - image: giorgosdi/asm
     steps:
       - checkout
-
       - run:
           name: create pip package
           command: |
@@ -60,6 +54,15 @@ jobs:
             py.test
 workflows:
   version: 2
+  update_image:
+    jobs:
+      - run_tests
+      - build_image:
+          requires:
+            - run_tests
+      - push_image:
+          requires:
+            - build_image
   main:
     jobs:
       - run_tests
@@ -74,9 +77,3 @@ workflows:
   test:
     jobs:
       - run_tests
-  build_image:
-    jobs:
-      - environment_variables
-      - build_image:
-          requires:
-            - environment_variables
