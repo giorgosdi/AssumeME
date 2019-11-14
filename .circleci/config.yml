@@ -8,16 +8,32 @@ jobs:
       - run:
           name: Set environment variables
           command: |
-            echo 'export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1)' >> $BASH_ENV
+            export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1)
+            echo 'export TEST1=HELLO' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: echo me
+          command: |
+            source $BASH_ENV
+            echo ${TEST1}
+            echo ${TAG}
   build_image:
     docker:
-      - image: docker:latest
+      - image: alpine
     steps:
       - checkout
       - run:
+          name: Set environment variables
+          command: |
+            echo 'export TEST2=IAMHERE'
+            echo "export TEST1=$(cat setup.py | grep version | cut -d = -f 2 | cut -d \' -f 2 | cut -d \' -f 1)" >> $BASH_ENV
+            source $BASH_ENV
+      - run:
           name: Build container image
           command: |
-            echo ${TAG}
+            source $BASH_ENV
+            echo ${TEST1}
+            echo ${TEST2}
             echo ${CIRCLE_BRANCH}
             # docker image build -t giorgosdi/asm:${TAG}-${CIRCLE_BRANCH}
 
