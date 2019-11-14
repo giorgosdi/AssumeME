@@ -1,7 +1,8 @@
 version: 2
 jobs:
   environment_variables:
-    docker: alpine
+    docker:
+      - image: alpine
   steps:
     - checkout
     - run:
@@ -37,7 +38,6 @@ jobs:
       - image: giorgosdi/asm-0.2.5:latest
     steps:
       - checkout
-
       - run:
           name: run tests
           command: |
