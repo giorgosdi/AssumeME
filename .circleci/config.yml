@@ -8,7 +8,7 @@ jobs:
     - run:
         name: Set environment variables
         command: |
-          export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1) >> $BASH_ENV
+          echo 'export TAG=$(cat setup.py | grep "version" | cut -d "=" -f 2 | cut -d "'" -f 2 | cut -d "'" -f 1)' >> $BASH_ENV
   build_image:
     docker:
       - image: docker:latest
