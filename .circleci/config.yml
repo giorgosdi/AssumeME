@@ -17,6 +17,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install requirements
+          command: |
+            pip install -r requirements.txt
+      - run:
           name: run tests
           command: |
             pytest
