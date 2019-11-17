@@ -1,3 +1,11 @@
+run_on_tags: &run_on_tags
+  filters:
+    tags:
+      only: 
+        - /^v[0-9]+(\.[0-9]+)*/
+    branches:
+      ignore: 
+        - /.*/
 version: 2
 jobs:
   build_package:
@@ -13,27 +21,32 @@ jobs:
             twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u ${USERNAME} -p ${PASSWORD}
   run_tests:
     docker:
-      - image: giorgosdi/asm-0.2.5:latest
+      - image: giorgosdi/pytest3
     steps:
       - checkout
-
+      - run:
+          name: Install requirements
+          command: |
+            pip install -r requirements.txt
+      - run:
+          name: Create assume directory (TEMP STEP)
+          command: |
+            mkdir /root/.assume
       - run:
           name: run tests
           command: |
-            py.test
+            pytest
+
 workflows:
   version: 2
   main:
     jobs:
-      - run_tests
+      - run_tests:
+          <<: *run_on_tags
       - build_package:
           requires:
             - run_tests
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*/
-            branches:
-              ignore: /.*/
+          <<: *run_on_tags
   test:
     jobs:
       - run_tests
