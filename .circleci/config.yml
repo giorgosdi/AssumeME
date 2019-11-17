@@ -21,6 +21,10 @@ jobs:
           command: |
             pip install -r requirements.txt
       - run:
+          name: Create assume directory (TEMP STEP)
+          command: |
+            mkdir /root/.assume
+      - run:
           name: run tests
           command: |
             pytest
