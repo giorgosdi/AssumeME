@@ -13,14 +13,14 @@ jobs:
             twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u ${USERNAME} -p ${PASSWORD}
   run_tests:
     docker:
-      - image: giorgosdi/asm-0.2.5:latest
+      - image: giorgosdi/pytest3
     steps:
       - checkout
-
       - run:
           name: run tests
           command: |
-            py.test
+            pytest
+
 workflows:
   version: 2
   main:
@@ -31,9 +31,11 @@ workflows:
             - run_tests
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: 
+                - /^v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              ignore: 
+                - /.*/
   test:
     jobs:
       - run_tests
