@@ -4,6 +4,7 @@ from os.path import expanduser
 import datetime
 import yaml
 from random import randint
+import os
 
 import src.logger as logger
 import src.api_calls as api_calls
@@ -214,6 +215,19 @@ class Utility(object):
                 os.mkdir(directory)
         except Exception as error:
             print(f"The {directory} failed to be created with the following error : {error}")
+    
+    def is_init(self):
+        if os.path.isdir(expanduser("~/.assume")):
+            if os.path.exists(expanduser("~/.assume/state")):
+                initialise = True
+            else:
+                self.create_file("~/.assume", "state")
+                initialise = True
+        else:
+            initialise = False
+        print(initialise)
+        return initialise
+            
 
 
 if '__main__' in __name__:
