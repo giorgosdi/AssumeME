@@ -1,11 +1,11 @@
 import click
 from src.configure import ConfigureAwsAssumeRole
 from src.utils import Utility
+import src.helper as helper
+
 from os.path import expanduser
 import os
-import subprocess
 import yaml
-import src.helper as helper
 
 class ConfigSetup(click.Group):
     def __init__(self, profile):
@@ -228,7 +228,6 @@ def config(ctx, set, get, add_profile, delete_profile):
                 del content['credentials_profile'][delete_profile.strip()]
                 helper_.write_file("{}.prof".format(ctx.obj.profile), content)
     else:
-        u = Utility()
         user_to_roles = {}
         u.print_message('Provide your configuration - leave blank for defaults in brackets')
         name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
@@ -258,6 +257,28 @@ def config(ctx, set, get, add_profile, delete_profile):
             roles_and_accounts=user_to_roles
         )
         conf.create_config(conf.config)
+
+@actions.command(help="Initialise asm")
+@click.pass_context
+def init(ctx):
+    u = Utility()
+    if os.path.isdir(APPLICATION_HOME_DIR):
+        directory = True
+        if os.path.exists(f"{APPLICATION_HOME_DIR}/state"):
+            state = True
+        else:
+            state = False
+    else:
+        directory = False
+    
+    if not directory:
+        u.create_directory(".assume")
+        u.create_file("state")
+        print("Initialise was successful..")
+    if not state:
+        u.create_file("state")
+    if directory and state:
+        print("Good news, `asm` is already initialised !")
 
 @actions.command(help="You are using it right now")
 @click.pass_context

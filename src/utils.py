@@ -196,6 +196,26 @@ class Utility(object):
             return yaml.load(f, Loader=yaml.FullLoader)
 
 
+    def create_file(self, path, file_):
+        try:
+            if os.path.exists(f"{path}/{file_}"):
+                pass
+            else:
+                with open(f"{expanduser(path)}/{file_}"):
+                    pass
+        except Exception as error:
+            print(f"The {file_} failed to be created with the following error : {error}")
+
+    def create_directory(self, directory):
+        try:
+            if os.path.isdir(expanduser(directory)):
+                pass
+            else:
+                os.mkdir(directory)
+        except Exception as error:
+            print(f"The {directory} failed to be created with the following error : {error}")
+
+
 if '__main__' in __name__:
     print('RUNNING UTILS')
     u = Utility()
