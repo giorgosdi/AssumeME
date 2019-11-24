@@ -2,6 +2,7 @@ import configparser
 import ruamel.yaml
 from os.path import expanduser
 
+
 class ConfigureAwsAssumeRole(object):
     """docstring for ConfigureAwsAssumeRole."""
     def __init__(self, config_path="~/.aws/config", credentials_path="~/.aws/credentials",
