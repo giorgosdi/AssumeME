@@ -24,40 +24,68 @@ APPLICATION_HOME_DIR = expanduser("~/.assume")
 @click.group()
 @click.pass_context
 def actions(ctx):
-    helper_ = helper.Helper()
     if os.path.isdir(f"{APPLICATION_HOME_DIR}"):
-        help()
-    else:
-        print("Please initialise asm using `asm init`")
-                
-def temp():
-    if os.path.isfile("{}/state".format(APPLICATION_HOME_DIR)):
+        u = Utility()
+        helper_ = helper.Helper()
+        if os.path.isfile(f"{APPLICATION_HOME_DIR}/state"):
+            pass
+        else:
+            u.create_file(APPLICATION_HOME_DIR, "state")
+
         content = helper_.read_file('state')
+        profiles = helper_.get_profiles()
         if content is not None:
             if content.get('profile'):
                 ctx.obj = ConfigSetup(content['profile'])
-    else:
-        print("State file does not exists.")
-        profiles = helper_.get_profiles()
-        if profiles:
-            profile=input('Choose one of these profiles : ')
-            while profile not in profiles:
-                profile=input('This profile does not exist. Choose a profile from the list above : ')
-            content = helper_.read_file('{}.prof'.format(profile))
-            profile_ = content['profile']
-            user_ = list(content['credentials_profile'].keys())[0]
-            role_ = list(content['credentials_profile'][user_].keys())[0]
-            account_ = content['credentials_profile'][user_][role_]
-            helper_.write_file('state', {
-                    'profile': profile_,
-                    'user': user_,
-                    'role': role_,
-                    'account': account_
-                })
-            ctx.obj = ConfigSetup(profile)
+                
+        elif profiles:
+            print("You already have a profile configured..")
+            profile = u.pick_from_list_of("profile", profiles)
+            profile_content = helper_.read_file(f"{profile}.prof")
+
+            users = list(profile_content['credentials_profile'].keys())
+            user = u.pick_from_list_of("user", users)
+
+            roles = list(profile_content['credentials_profile'][user].keys())
+            role = u.pick_from_list_of("role", roles)
+            state_content ={
+                'profile': profile,
+                'account': profile_content['credentials_profile'][user][role],
+                'user': user,
+                'role': role
+            }
+            helper_.write_file("state", state_content)
         else:
-            print("There are no profiles available, you should create a new profile.")
-            config()
+            conf = u.configure()
+            conf.create_config(conf.config)     
+    else:
+        print("Initializing..")
+        init(ctx)
+        config(ctx)
+       
+# def temp():
+#     else:
+#         print("State file does not exists.")
+#         profiles = helper_.get_profiles()
+#         if profiles:
+#             profile=input('Choose one of these profiles : ')
+#             while profile not in profiles:
+#                 profile=input('This profile does not exist. Choose a profile from the list above : ')
+#             content = helper_.read_file('{}.prof'.format(profile))
+#             profile_ = content['profile']
+#             user_ = list(content['credentials_profile'].keys())[0]
+#             role_ = list(content['credentials_profile'][user_].keys())[0]
+#             account_ = content['credentials_profile'][user_][role_]
+#             helper_.write_file('state', {
+#                     'profile': profile_,
+#                     'user': user_,
+#                     'role': role_,
+#                     'account': account_
+#                 })
+#             ctx.obj = ConfigSetup(profile)
+#         else:
+#             print("There are no profiles available, you should create a new profile.")
+#             config()
 
 @actions.command(help="Choose a profile and add it in your state file")
 @click.argument('profile')
@@ -234,37 +262,11 @@ def config(ctx, set, get, add_profile, delete_profile):
                     del content['credentials_profile'][delete_profile.strip()]
                     helper_.write_file("{}.prof".format(ctx.obj.profile), content)
         else:
-            user_to_roles = {}
-            u.print_message('Provide your configuration - leave blank for defaults in brackets')
-            name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
-            config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
-            credentials_path = input('AWS credentials path [~/.aws/credentials] : ') or '~/.aws/credentials'
-            token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
-            region = input('Region [eu-west-1] : ') or 'eu-west-1'
-            output = input('Output [text] : ') or 'text'
-            profiles = input('Profile to associate this configuration [default] (For multiple profiles separate by `,`): ') or 'default'
-            # roles_and_accounts = input('Roles - accounts that you want to assume [Admin - 123456789]') or 'Admin - 123456789'
-
-            for profile in profiles.split(','):
-                user_to_roles[profile.strip()] = input("Provide a role and the account number for profile {} : ".format(profile.strip()))
-            for k,v in user_to_roles.items():
-                roles_and_accounts_pairs = v.split('-')
-                user_to_roles[k] = {roles_and_accounts_pairs[0].strip(): roles_and_accounts_pairs[1].strip()}
-            
-
-            conf = ConfigureAwsAssumeRole(
-                config_path=config_path,
-                credentials_path=credentials_path,
-                configuration_name=name,
-                token_duration=token_duration,
-                region=region,
-                output=output,
-                credentials_profile=profiles,
-                roles_and_accounts=user_to_roles
-            )
+            conf = u.configure()
             conf.create_config(conf.config)
     else:
         actions()
+
 @actions.command(help="Initialise asm")
 @click.pass_context
 def init(ctx):
@@ -278,19 +280,26 @@ def init(ctx):
     else:
         directory = False
     
-    if not directory:
-        u.create_directory(".assume")
-        u.create_file("state")
-        print("Initialise was successful..")
-    if not state:
-        u.create_file("state")
     if directory and state:
         print("Good news, `asm` is already initialised !")
+
+    if not directory:
+        u.create_directory(APPLICATION_HOME_DIR)
+        u.create_file(APPLICATION_HOME_DIR, "state")
+        state = True
+        print("Initialization was successful..")
+    if not state:
+        u.create_file("state")
 
 @actions.command(help="You are using it right now")
 @click.pass_context
 def help(ctx):
     print(actions.get_help(ctx))
+
+@actions.command(help="Print the command to export the AWS profile")
+@click.pass_context
+def export(ctx):
+    print(f"export AWS_PROFILE={ctx.obj.profile}")
 
 def main():
     actions()

@@ -5,6 +5,7 @@ import datetime
 import yaml
 from random import randint
 import os
+from src.configure import ConfigureAwsAssumeRole
 
 import src.logger as logger
 import src.api_calls as api_calls
@@ -202,16 +203,17 @@ class Utility(object):
             if os.path.exists(f"{path}/{file_}"):
                 pass
             else:
-                with open(f"{expanduser(path)}/{file_}"):
+                with open(f"{path}/{file_}", "w+"):
                     pass
         except Exception as error:
             print(f"The {file_} failed to be created with the following error : {error}")
 
     def create_directory(self, directory):
         try:
-            if os.path.isdir(expanduser(directory)):
+            if os.path.isdir(directory):
                 pass
             else:
+
                 os.mkdir(directory)
         except Exception as error:
             print(f"The {directory} failed to be created with the following error : {error}")
@@ -225,10 +227,46 @@ class Utility(object):
                 initialise = True
         else:
             initialise = False
-        print(initialise)
         return initialise
-            
 
+    def configure(self):
+        user_to_roles = {}
+        self.print_message('Provide your configuration - leave blank for defaults in brackets')
+        name = input("Configuration name [MyNewConfig] : ") or "MyNewConfig"
+        config_path = input('AWS config path [~/.aws/config] : ') or '~/.aws/config'
+        credentials_path = input('AWS credentials path [~/.aws/credentials] : ') or '~/.aws/credentials'
+        token_duration = input('Duration of profile in seconds [86400 - one day] : ') or '86400'
+        region = input('Region [eu-west-1] : ') or 'eu-west-1'
+        output = input('Output [text] : ') or 'text'
+        profiles = input('Profile to associate this configuration [default] (For multiple profiles separate by `,`): ') or 'default'
+        # roles_and_accounts = input('Roles - accounts that you want to assume [Admin - 123456789]') or 'Admin - 123456789'
+
+        for profile in profiles.split(','):
+            user_to_roles[profile.strip()] = input("Provide a role and the account number for profile {} : ".format(profile.strip()))
+        for k,v in user_to_roles.items():
+            roles_and_accounts_pairs = v.split('-')
+            user_to_roles[k] = {roles_and_accounts_pairs[0].strip(): roles_and_accounts_pairs[1].strip()}
+        
+
+        conf = ConfigureAwsAssumeRole(
+            config_path=config_path,
+            credentials_path=credentials_path,
+            configuration_name=name,
+            token_duration=token_duration,
+            region=region,
+            output=output,
+            credentials_profile=profiles,
+            roles_and_accounts=user_to_roles
+        )
+        return conf
+
+    def pick_from_list_of(self, kind, type_):
+        print("Pick one from the following")
+        [print(f"- {t}") for t in type_]
+        choice = input("Choose one of the above : ")
+        while choice not in type_:
+            choice=input(f'This {kind} does not exist. Choose a {kind} from the list : ')
+        return choice
 
 if '__main__' in __name__:
     print('RUNNING UTILS')
