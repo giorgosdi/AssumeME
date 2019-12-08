@@ -24,68 +24,8 @@ APPLICATION_HOME_DIR = expanduser("~/.assume")
 @click.group()
 @click.pass_context
 def actions(ctx):
-    if os.path.isdir(f"{APPLICATION_HOME_DIR}"):
-        u = Utility()
-        helper_ = helper.Helper()
-        if os.path.isfile(f"{APPLICATION_HOME_DIR}/state"):
-            pass
-        else:
-            u.create_file(APPLICATION_HOME_DIR, "state")
+    pass
 
-        content = helper_.read_file('state')
-        profiles = helper_.get_profiles()
-        if content is not None:
-            if content.get('profile'):
-                ctx.obj = ConfigSetup(content['profile'])
-                
-        elif profiles:
-            print("You already have a profile configured..")
-            profile = u.pick_from_list_of("profile", profiles)
-            profile_content = helper_.read_file(f"{profile}.prof")
-
-            users = list(profile_content['credentials_profile'].keys())
-            user = u.pick_from_list_of("user", users)
-
-            roles = list(profile_content['credentials_profile'][user].keys())
-            role = u.pick_from_list_of("role", roles)
-            state_content ={
-                'profile': profile,
-                'account': profile_content['credentials_profile'][user][role],
-                'user': user,
-                'role': role
-            }
-            helper_.write_file("state", state_content)
-        else:
-            conf = u.configure()
-            conf.create_config(conf.config)     
-    else:
-        print("Initializing..")
-        init(ctx)
-        config(ctx)
-       
-# def temp():
-#     else:
-#         print("State file does not exists.")
-#         profiles = helper_.get_profiles()
-#         if profiles:
-#             profile=input('Choose one of these profiles : ')
-#             while profile not in profiles:
-#                 profile=input('This profile does not exist. Choose a profile from the list above : ')
-#             content = helper_.read_file('{}.prof'.format(profile))
-#             profile_ = content['profile']
-#             user_ = list(content['credentials_profile'].keys())[0]
-#             role_ = list(content['credentials_profile'][user_].keys())[0]
-#             account_ = content['credentials_profile'][user_][role_]
-#             helper_.write_file('state', {
-#                     'profile': profile_,
-#                     'user': user_,
-#                     'role': role_,
-#                     'account': account_
-#                 })
-#             ctx.obj = ConfigSetup(profile)
-#         else:
-#             print("There are no profiles available, you should create a new profile.")
-#             config()
 
 @actions.command(help="Choose a profile and add it in your state file")
 @click.argument('profile')
@@ -93,47 +33,51 @@ def actions(ctx):
 @click.option('--user')
 @click.pass_context
 def choose(ctx, profile, user, role):
-    helper_ = helper.Helper()
-    details = helper_.read_file("{}.prof".format(profile))
-    users = list(details['credentials_profile'].keys())
-    
-    if not user:
-        print("You have these users:")
-        for u in users:
-            print('- {}'.format(u))
-        user = input("Pick a role : ")
+    u = Utility()
+    if u.is_init():
+        helper_ = helper.Helper()
+        details = helper_.read_file("{}.prof".format(profile))
+        users = list(details['credentials_profile'].keys())
+        
+        if not user:
+            print("You have these users:")
+            for u in users:
+                print('- {}'.format(u))
+            user = input("Pick a role : ")
 
-    while user not in users:
-        user = input("The user you chose does not exist.. Pick a valid user")
-    
-    roles = list(details['credentials_profile'][user].keys())
-    if not role:
-        print("You have these roles:")
-        for r in roles:
-            print('- {}'.format(r))
-        role = input("Pick a role : ")
+        while user not in users:
+            user = input("The user you chose does not exist.. Pick a valid user")
+        
+        roles = list(details['credentials_profile'][user].keys())
+        if not role:
+            print("You have these roles:")
+            for r in roles:
+                print('- {}'.format(r))
+            role = input("Pick a role : ")
 
-    while role not in roles:
-        role = input("The role you chose does not exist. Pick a valid role : ")
-    
-    profiles = helper_.get_profiles()
-    info = {
-            'profile': profile,
-            'user': user,
-            'role': role,
-            'account': details['credentials_profile'][user][role]
-            }
-    if profile in profiles:
-        helper_.write_file('state', info)
-        ctx.obj = ConfigSetup(profile)
-    else:
-        print("The profile does not exist")
-        if profiles:
-            print("Pick one of the")
-            for p in profiles:
-                print("- {}".format(p))
+        while role not in roles:
+            role = input("The role you chose does not exist. Pick a valid role : ")
+        
+        profiles = helper_.get_profiles()
+        info = {
+                'profile': profile,
+                'user': user,
+                'role': role,
+                'account': details['credentials_profile'][user][role]
+                }
+        if profile in profiles:
+            helper_.write_file('state', info)
+            ctx.obj = ConfigSetup(profile)
         else:
-            print("There are no profiles. Configure a profile please")
+            print("The profile does not exist")
+            if profiles:
+                print("Pick one of the")
+                for p in profiles:
+                    print("- {}".format(p))
+            else:
+                print("There are no profiles. Configure a profile please")
+    else:
+        print("You need to initialize first.")
 
 
 @actions.command(help="""Tells you what is you current profile, based on your `state` file
@@ -144,15 +88,19 @@ assume whoami
 """)
 @click.pass_context
 def whoami(ctx):
-    with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
-        content = yaml.load(f, Loader=yaml.FullLoader)
-    if content is None:
-        print("Jaqen H'ghar, is that you ?")
-        print("A girl is No One")
-        print("Choose a profile with aptly named command `choose` or configure one with another aplty named command `configure`")
+    u = Utility()
+    if u.is_init():
+        with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
+            content = yaml.load(f, Loader=yaml.FullLoader)
+        if content is None:
+            print("Jaqen H'ghar, is that you ?")
+            print("A girl is No One")
+            print("Choose a profile with aptly named command `choose` or configure one with another aplty named command `configure`")
+        else:
+            if content.get('profile'):
+                print('Your current profile is :  {}'.format(content['profile']))
     else:
-        if content.get('profile'):
-            print('Your current profile is :  {}'.format(content['profile']))
+        print("You need to initialize first.")
 
 
 
@@ -167,28 +115,34 @@ assume generate
 @click.pass_context
 def generate(ctx):
     u = Utility()
-    creds = u.get_credentials(ctx.obj.current_state['user'])
-    aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
-    u.create_section(
-        aws_creds,
-        aws_config,
-        ctx.obj.current_state['user'],
-        creds,
-        ctx.obj.aws_creds_path,
-        ctx.obj.aws_config_path
-    )
+    if u.is_init():
+        creds = u.get_credentials(ctx.obj.current_state['user'])
+        aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
+        u.create_section(
+            aws_creds,
+            aws_config,
+            ctx.obj.current_state['user'],
+            creds,
+            ctx.obj.aws_creds_path,
+            ctx.obj.aws_config_path
+        )
+    else:
+        print("You need to initialize first.")
 
 
 @actions.command(help="""Shows all your temporary profiles""")
 @click.option('--all', default=False, is_flag=True)
 @click.pass_context
 def show(ctx, all):
-    if ctx.obj is None:
-        print("A girl is No One. Pick a user with `choose` or configure one with `configure`")
-        exit(1)
+    u = Utility()
+    if u.is_init():
+        if ctx.obj is None:
+            print("You haven't chose a profile yet.")
+            exit(1)
+        else:
+            sections=u.discover_sections(ctx.obj.aws_creds, all, ctx.obj.profile)
     else:
-        u = Utility()
-        sections=u.discover_sections(ctx.obj.aws_creds, all, ctx.obj.profile)
+        print("You need to initialize first")
 
 @actions.command(help="Deletes all profiles that passed the expiration date and asks you if you want to delete the valid ones")
 @click.pass_context
@@ -265,7 +219,7 @@ def config(ctx, set, get, add_profile, delete_profile):
             conf = u.configure()
             conf.create_config(conf.config)
     else:
-        actions()
+        print("You need to initialize first.")
 
 @actions.command(help="Initialise asm")
 @click.pass_context
@@ -299,7 +253,14 @@ def help(ctx):
 @actions.command(help="Print the command to export the AWS profile")
 @click.pass_context
 def export(ctx):
-    print(f"export AWS_PROFILE={ctx.obj.profile}")
+    u = Utility()
+    if u.is_init():
+        if ctx.obj is not None:
+            print(f"export AWS_PROFILE={ctx.obj.profile}")
+        else:
+            print("You haven't chose a profile yet.")
+    else:
+        print("You need to initialize first")
 
 def main():
     actions()
