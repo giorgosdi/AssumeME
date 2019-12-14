@@ -136,11 +136,14 @@ def generate(ctx):
 def show(ctx, all):
     u = Utility()
     if u.is_init():
-        if ctx.obj is None:
-            print("You haven't chose a profile yet.")
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
+        if content is None:
+            print("You dont have a profile set in your state file. Choose a profile with `choose` command")
             exit(1)
         else:
-            sections=u.discover_sections(ctx.obj.aws_creds, all, ctx.obj.profile)
+            config = ConfigSetup(content['profile'])
+            sections=u.discover_sections(config.aws_creds, all, config.profile)
     else:
         print("You need to initialize first")
 
