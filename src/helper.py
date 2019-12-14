@@ -17,7 +17,11 @@ class Helper(object):
         for file_ in os.listdir(os.path.expanduser("~/.assume")):
             if ".prof" in file_:
                 files.append(file_.split('.')[0])
-        return files
+        if files:
+            return files
+        else:
+            print("There are no profiles available. Please create a profile with `config` command")
+            exit(1)
         
 
                 

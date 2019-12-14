@@ -36,46 +36,36 @@ def choose(ctx, profile, user, role):
     u = Utility()
     if u.is_init():
         helper_ = helper.Helper()
+        existing_profiles = helper_.get_profiles()
+        while profile not in existing_profiles:
+            profile = u.pick_from_list_of("profile", existing_profiles)
+
         details = helper_.read_file("{}.prof".format(profile))
-        users = list(details['credentials_profile'].keys())
+        users = details.get('credentials_profile', None
+        if users not None:
+            users = list(users.keys())
+        else:
+            print("Malformed state file. The profile has no users") 
+            exit(1)
         
-        if not user:
-            print("You have these users:")
-            for u in users:
-                print('- {}'.format(u))
-            user = input("Pick a role : ")
-
-        while user not in users:
-            user = input("The user you chose does not exist.. Pick a valid user")
+        user = u.pick_from_list_of("user", users)
         
-        roles = list(details['credentials_profile'][user].keys())
-        if not role:
-            print("You have these roles:")
-            for r in roles:
-                print('- {}'.format(r))
-            role = input("Pick a role : ")
-
-        while role not in roles:
-            role = input("The role you chose does not exist. Pick a valid role : ")
+        roles = details.get('credentials_profile', None).get(user, None)
+        if roles not None:
+            roles = list(roles.keys())
+        else:
+            print("Malformed state file. The profile has no roles") 
+            exit(1)
+        role = u.pick_from_list_of("role", roles)
         
-        profiles = helper_.get_profiles()
         info = {
                 'profile': profile,
                 'user': user,
                 'role': role,
                 'account': details['credentials_profile'][user][role]
                 }
-        if profile in profiles:
-            helper_.write_file('state', info)
-            ctx.obj = ConfigSetup(profile)
-        else:
-            print("The profile does not exist")
-            if profiles:
-                print("Pick one of the")
-                for p in profiles:
-                    print("- {}".format(p))
-            else:
-                print("There are no profiles. Configure a profile please")
+
+        helper_.write_file('state', info)
     else:
         print("You need to initialize first.")
 
