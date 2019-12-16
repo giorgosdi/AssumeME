@@ -41,8 +41,8 @@ def choose(ctx, profile, user, role):
             profile = u.pick_from_list_of("profile", existing_profiles)
 
         details = helper_.read_file("{}.prof".format(profile))
-        users = details.get('credentials_profile', None
-        if users not None:
+        users = details.get('credentials_profile', None)
+        if users is not None:
             users = list(users.keys())
         else:
             print("Malformed state file. The profile has no users") 
@@ -51,7 +51,7 @@ def choose(ctx, profile, user, role):
         user = u.pick_from_list_of("user", users)
         
         roles = details.get('credentials_profile', None).get(user, None)
-        if roles not None:
+        if roles is not None:
             roles = list(roles.keys())
         else:
             print("Malformed state file. The profile has no roles") 
