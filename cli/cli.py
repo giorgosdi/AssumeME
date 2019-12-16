@@ -80,12 +80,11 @@ assume whoami
 def whoami(ctx):
     u = Utility()
     if u.is_init():
-        with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
-            content = yaml.load(f, Loader=yaml.FullLoader)
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
         if content is None:
-            print("Jaqen H'ghar, is that you ?")
-            print("A girl is No One")
-            print("Choose a profile with aptly named command `choose` or configure one with another aplty named command `configure`")
+            print("You dont have a profile set in your state file. Choose a profile with `choose` command")
+            exit(1)
         else:
             if content.get('profile'):
                 print('Your current profile is :  {}'.format(content['profile']))
