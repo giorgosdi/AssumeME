@@ -106,15 +106,23 @@ assume generate
 def generate(ctx):
     u = Utility()
     if u.is_init():
-        creds = u.get_credentials(ctx.obj.current_state['user'])
-        aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
+        if content is None:
+            print("You dont have a profile set in your state file. Choose a profile with `choose` command")
+            exit(1)
+        else:
+            config = ConfigSetup(content['profile'])
+
+        creds = u.get_credentials(config['user'])
+        aws_creds, aws_config = u.create_config_parsers([config.aws_creds_path, config.aws_config_path])
         u.create_section(
             aws_creds,
             aws_config,
-            ctx.obj.current_state['user'],
+            config.current_state['user'],
             creds,
-            ctx.obj.aws_creds_path,
-            ctx.obj.aws_config_path
+            config.aws_creds_path,
+            config.aws_config_path
         )
     else:
         print("You need to initialize first.")
@@ -236,7 +244,7 @@ def init(ctx):
         state = True
         print("Initialization was successful..")
     if not state:
-        u.create_file("state")
+        u.create_file(APPLICATION_HOME_DIR, "state")
 
 @actions.command(help="You are using it right now")
 @click.pass_context
