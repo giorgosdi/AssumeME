@@ -42,7 +42,7 @@ def choose(ctx, profile, user, role):
 
         details = helper_.read_file("{}.prof".format(profile))
         users = details.get('credentials_profile', None)
-        if users not None:
+        if users is not None:
             users = list(users.keys())
         else:
             print("Malformed state file. The profile has no users") 
@@ -51,7 +51,7 @@ def choose(ctx, profile, user, role):
         user = u.pick_from_list_of("user", users)
         
         roles = details.get('credentials_profile', None).get(user, None)
-        if roles not None:
+        if roles is not None:
             roles = list(roles.keys())
         else:
             print("Malformed state file. The profile has no roles") 
@@ -101,20 +101,25 @@ Command:
 
 assume generate
 """)
-# @click.argument('profile')  # add the name argument
 @click.pass_context
 def generate(ctx):
     u = Utility()
     if u.is_init():
-        creds = u.get_credentials(ctx.obj.current_state['user'])
-        aws_creds, aws_config = u.create_config_parsers([ctx.obj.aws_creds_path, ctx.obj.aws_config_path])
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
+        creds = u.get_credentials(content['user'])
+        profile_config = helper_.read_file(content['profile'])
+        aws_creds_path = expanduser(profile_config['credentials'])
+        aws_config_path = expanduser(profile_config['config'])
+
+        aws_creds, aws_config = u.create_config_parsers([aws_creds_path, aws_config_path])
         u.create_section(
             aws_creds,
             aws_config,
-            ctx.obj.current_state['user'],
+            content['user'],
             creds,
-            ctx.obj.aws_creds_path,
-            ctx.obj.aws_config_path
+            aws_creds_path,
+            aws_config_path
         )
     else:
         print("You need to initialize first.")
@@ -253,9 +258,9 @@ def export(ctx):
         if content is None:
             print("You dont have a profile set in your state file. Choose a profile with `choose` command")
             exit(1)
-        else
+        else:
             print(f"export AWS_PROFILE={content['profile']}")
-    else
+    else:
         print("You need to initialize first")
 
 def main():
