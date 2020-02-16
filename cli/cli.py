@@ -109,17 +109,11 @@ def generate(ctx):
         content = helper_.read_file("state")
         creds = u.get_credentials(content['user'])
         profile_config = helper_.read_file(content['profile'])
-        aws_creds_path = expanduser(profile_config['credentials'])
-        aws_config_path = expanduser(profile_config['config'])
 
-        aws_creds, aws_config = u.create_config_parsers([aws_creds_path, aws_config_path])
         u.create_section(
-            aws_creds,
-            aws_config,
+            profile_config,
             content['user'],
-            creds,
-            aws_creds_path,
-            aws_config_path
+            creds
         )
     else:
         print("You need to initialize first.")

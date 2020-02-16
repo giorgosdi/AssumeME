@@ -51,7 +51,12 @@ class Utility(object):
         state = helper_.read_file('state')
         return api_client.assume_role(sts_client, state)
 
-    def create_section(self, aws_credential_parser, aws_config_parser, profile, creds, credentials_path, conf_path):
+    def create_section(self, profile_config, profile, creds):
+        
+        aws_credential_parser, aws_config_parser = u._create_config_parsers([aws_creds_path, aws_config_path])
+        credentials_path = expanduser(profile_config['credentials'])
+        conf_path = expanduser(profile_config['config'])
+        
         self.print_message(profile)
 
         if self.section_exists("{}-temp".format(profile), aws_credential_parser):
@@ -73,6 +78,7 @@ class Utility(object):
             self.print_message('Creating temporary credentials')
             self.apply_section(section, aws_credential_parser, credentials_path, creds, 'create')
             self.print_message('Credentials have been created under profile : {}'.format(profile))
+
         if self.section_exists("{}-temp".format(profile), aws_config_parser):
             self.print_message("Profile exists in the AWS config. No further action needed")
         else:
@@ -106,7 +112,7 @@ class Utility(object):
     def _get_section_options(self, parser, section):
         return dict(parser[section])
 
-    def create_config_parsers(self, paths):
+    def _create_config_parsers(self, paths):
         list_of_parsers = []
         if isinstance(paths, list):
             for path in paths:
