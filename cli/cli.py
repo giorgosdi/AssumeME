@@ -41,7 +41,7 @@ def choose(ctx, profile, user, role):
             profile = u.pick_from_list_of("profile", existing_profiles)
 
         details = helper_.read_file("{}.prof".format(profile))
-        users = details.get('credentials_profile', None
+        users = details.get('credentials_profile', None)
         if users not None:
             users = list(users.keys())
         else:
@@ -248,14 +248,15 @@ def help(ctx):
 def export(ctx):
     u = Utility()
     if u.is_init():
-        if ctx.obj is not None:
-            print(f"export AWS_PROFILE={ctx.obj.profile}")
-        else:
-            print("You haven't chose a profile yet.")
-    else:
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
+        if content is None:
+            print("You dont have a profile set in your state file. Choose a profile with `choose` command")
+            exit(1)
+        else
+            print(f"export AWS_PROFILE={content['profile']}")
+    else
         print("You need to initialize first")
 
 def main():
     actions()
-# if __name__ == '__main__':
-#     actions()
