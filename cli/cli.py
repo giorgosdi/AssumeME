@@ -139,24 +139,25 @@ def show(ctx, all):
 @actions.command(help="Deletes all profiles that passed the expiration date and asks you if you want to delete the valid ones")
 @click.pass_context
 def clean(ctx):
-    if ctx.obj is not None:
-        if os.path.isfile("{}/state".format(APPLICATION_HOME_DIR)):
-            with open("{}/state".format(APPLICATION_HOME_DIR)) as f:
-                content=yaml.load(f, Loader=yaml.FullLoader)
-            
-            if content is not None:
-                if content.get('profile'):
-                    u = Utility()
-                    profile = ConfigSetup(content['profile'])
-                    parsers = {
-                        "config": ctx.obj.aws_config,
-                        "credentials": ctx.obj.aws_creds
-                    }
-                    paths = {
-                        "config": ctx.obj.aws_config_path,
-                        "credentials": ctx.obj.aws_creds_path
-                    }
-                    u.clean_sections(parsers, paths)
+    u = Utility()
+    if u.is_init():
+        helper_ = helper.Helper()
+        content = helper_.read_file("state")
+        if content is None:
+            print("You dont have a profile set in your state file. Choose a profile with `choose` command")
+            exit(1)
+        else:
+            if content.get("profile"):
+                profile_config = helper_.read_file(content["profile"])
+                parsers = {
+                    "config": profile_config["config"],
+                    "credentials": profile_config["credentials"]
+                }
+                paths = {
+                    "config": expanduser(profile_config["config"]),
+                    "credentials": expanduser(profile_config["credentials"])
+                }
+                u.clean_sections(parsers, paths)
 
 
 
