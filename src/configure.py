@@ -2,6 +2,7 @@ import configparser
 import ruamel.yaml
 from os.path import expanduser
 
+APPLICATION_HOME_DIR = expanduser("~/.assume")
 
 class ConfigureAwsAssumeRole(object):
     """docstring for ConfigureAwsAssumeRole."""

@@ -52,10 +52,9 @@ class Utility(object):
         return api_client.assume_role(sts_client, state)
 
     def create_section(self, profile_config, profile, creds):
-        
-        aws_credential_parser, aws_config_parser = u._create_config_parsers([aws_creds_path, aws_config_path])
         credentials_path = expanduser(profile_config['credentials'])
         conf_path = expanduser(profile_config['config'])
+        aws_credential_parser, aws_config_parser = self._create_config_parsers([credentials_path, conf_path])
         
         self.print_message(profile)
 
@@ -131,8 +130,16 @@ class Utility(object):
             list_of_parsers.append(generic_parser)
         return list_of_parsers if len(list_of_parsers) > 0 else list_of_parsers[0]
 
+    def show_aws_profiles(self, profile_config, all, profile):
+        credentials_path = expanduser(profile_config['credentials'])
+        conf_path = expanduser(profile_config['config'])
+        aws_credential_parser, aws_config_parser = self._create_config_parsers([credentials_path, conf_path])
 
-    def discover_sections(self, parser, all, profile):
+        self._discover_sections(aws_credential_parser, all, profile)
+
+
+    def _discover_sections(self, parser, all, profile):
+
         sections = parser.sections()
         sections_discovered=[]
         if all:

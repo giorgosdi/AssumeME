@@ -22,7 +22,7 @@ setup(name='asm',
       )],
       entry_points={
             'console_scripts': [
-                  'asm = cli.cli:main',
+                  'asm = cli:cli',
             ],
       },
       classifiers=[
