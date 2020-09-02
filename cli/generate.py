@@ -2,6 +2,7 @@ import click
 
 from src.utils import Utility
 import src.helper as helper
+from src.section import Section
 
 
 @click.command(name="generate", help="Creates temporary credentials out of the current profile")
@@ -14,7 +15,7 @@ def generate_credentials_command(ctx):
         creds = u.get_credentials(content['user'])
         profile_config = helper_.read_file("{}.prof".format(content['profile']))
 
-        u.create_section(
+        Section.create_section(
             profile_config,
             content['user'],
             creds
